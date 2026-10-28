@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Izin Surat Keluar Sekolah - SDN No.40 Hulonthalangi Gorontalo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- QRCode.js untuk Tanda Tangan Barcode -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* Print Media Styles */
+        @media print {
+            body * { visibility: hidden !important; }
+            #print-area, #print-area *, #print-recap-area, #print-recap-area * { visibility: visible !important; }
+            #print-area-wrapper, #print-recap-wrapper {
+                position: absolute !important; left: 0 !important; top: 0 !important;
+                width: 100% !important; height: auto !important; background: white !important;
+                padding: 0 !important; margin: 0 !important;
+            }
+            #print-area, #print-recap-area {
+                position: absolute !important; left: 0 !important; top: 0 !important;
+                width: 100% !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important;
+            }
+            .no-print { display: none !important; }
+            @page { size: A4; margin: 1.5cm; }
+        }
+
+        /* Official Document Styles */
+        .surat-header { text-align: center; border-bottom: 3px double #000; padding-bottom: 8px; margin-bottom: 20px; position: relative; }
+        .logo-kiri { position: absolute; left: 10px; top: 2px; width: 75px; height: auto; }
+        .logo-kanan { position: absolute; right: 10px; top: 2px; width: 75px; height: auto; }
+        .surat-title { text-align: center; font-weight: 700; text-decoration: underline; letter-spacing: 1px; font-size: 13pt; }
+        .surat-grid { display: grid; grid-template-columns: 140px 15px 1fr; margin-bottom: 6px; font-size: 11pt; }
+        .surat-box { border: 2px dashed #333; padding: 12px; text-align: center; margin: 18px 0; background-color: #fafafa; }
+        .surat-ttd { float: right; width: 280px; text-align: center; margin-top: 25px; font-size: 11pt; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- KONFIGURASI LOGO -->
+    <script>
+        // =====================================================================
+        // CARA MENGGANTI LOGO:
+        // Ganti teks di dalam tanda kutip dengan link gambar atau nama file Anda.
+        // Contoh jika file ada di satu folder: "logo-kota.png"
+        // =====================================================================
+        
+        const LOGO_KIRI_URL = "Logo Kota.PNG"; 
+        const LOGO_KANAN_URL = "Logo SDN40.PNG";
+    </script>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed top-5 right-5 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl transform transition-all duration-300 translate-x-full z-50 flex items-center space-x-3 border border-emerald-400">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span id="toast-message" class="font-medium text-sm">Notifikasi</span>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 p-4">
+        <div class="bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-md border border-white/20">
+            <div class="text-center mb-6">
+                <div class="inline-flex p-3 bg-blue-50/80 rounded-2xl mb-3 shadow-inner">
+                    <img id="login-logo-img" src="" alt="Logo Kota Gorontalo" class="w-20 h-auto drop-shadow-md">
+                </div>
+                <h1 class="text-xl font-extrabold text-gray-900 leading-tight">E-Izin Surat Keluar</h1>
+                <p class="text-xs text-blue-800 font-bold mt-1">SDN No. 40 Hulonthalangi Gorontalo</p>
+            </div>
+            
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Username</label>
+                    <input type="text" id="username" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition text-sm" placeholder="Masukkan username Anda">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Password</label>
+                    <input type="password" id="password" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition text-sm" placeholder="Masukkan kata sandi">
+                </div>
+                <button type="submit" class="w-full mt-2 py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition duration-200 text-sm">
+                    Masuk ke Sistem
+                </button>
+            </form>
+
+            <!-- INFORMASI LOGIN (PENGGANTI AKUN DEMO) -->
+            <div class="mt-6 pt-5 border-t border-gray-100">
+                <div class="flex items-start space-x-3 p-3.5 bg-indigo-50/60 rounded-xl border border-indigo-100">
+                    <div class="flex-shrink-0 mt-0.5">
+                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-indigo-900 mb-0.5">Informasi Keamanan</h4>
+                        <p class="text-[11px] text-indigo-700/80 leading-relaxed">
+                            Gunakan kredensial resmi Anda untuk mengakses sistem. Harap hubungi Administrator Sekolah jika Anda melupakan kata sandi atau mengalami kendala masuk.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="app-container" class="hidden min-h-screen flex flex-col">
+        <!-- NAVBAR -->
+        <nav class="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white shadow-lg sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16 items-center">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 p-1 bg-white/10 rounded-xl backdrop-blur flex items-center justify-center">
+                            <img id="nav-logo-img" src="" alt="Logo Kota Gorontalo" class="max-h-full max-w-full drop-shadow">
+                        </div>
+                        <div>
+                            <span class="font-bold text-base md:text-lg tracking-wide block leading-none">E-Izin Surat Keluar</span>
+                            <span class="text-[10px] text-blue-200 font-medium">SDN No. 40 Hulonthalangi</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right hidden sm:block">
+                            <span id="user-greeting" class="text-sm font-semibold block">User</span>
+                            <span id="user-role-badge" class="text-[10px] bg-blue-700/60 px-2 py-0.5 rounded-full text-blue-200 border border-blue-500/30">Role</span>
+                        </div>
+                        <button onclick="handleLogout()" class="bg-red-500/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center shadow border border-red-400/30">
+                            Keluar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full space-y-6">
+            
+            <!-- STAFF DASHBOARD -->
+            <div id="staff-dashboard" class="hidden space-y-6">
+                <!-- FORM PENGAJUAN -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="border-b pb-4 mb-5 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">Form Pengajuan Izin Keluar Sekolah</h2>
+                            <p class="text-xs text-gray-500">Isi formulir di bawah ini untuk mengajukan permohonan izin.</p>
+                        </div>
+                        <span class="bg-blue-50 text-blue-700 text-xs px-3 py-1 rounded-full font-semibold border border-blue-100 hidden md:inline-block">Form Tenaga Pendidik dan Tenaga Kependidikan</span>
+                    </div>
+
+                    <form onsubmit="event.preventDefault(); submitSurat();" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Nama Lengkap</label>
+                            <input type="text" id="form-nama" class="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none text-sm" placeholder="Contoh: Budi Santoso, S.Pd" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">NIP / NIK</label>
+                            <input type="text" id="form-nip" class="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none text-sm" placeholder="Contoh: 198001012010011001" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Status Kepegawaian</label>
+                            <select id="form-status-pegawai" class="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none text-sm bg-white" required>
+                                <option value="PNS">PNS</option>
+                                <option value="PPPK-Penuh Waktu">PPPK-Penuh Waktu</option>
+                                <option value="PPPK-Paruh Waktu">PPPK-Paruh Waktu</option>
+                                <option value="Honor Sekolah">Honor Sekolah</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Jabatan</label>
+                            <input type="text" id="form-jabatan" class="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none text-sm" placeholder="Contoh: Guru Kelas VI" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Unit Kerja</label>
+                            <input type="text" id="form-unit" class="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none text-sm" placeholder="Contoh: SDN No.40 Hulonthalangi Gorontalo" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Tujuan Keluar</label>
+                            <input type="text" id="form-tujuan" class="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none text-sm" placeholder="Contoh: Kantor Dikbud / Bank SulutGo" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Lama Waktu (Durasi)</label>
+                            <select id="form-waktu" onchange="autoCalculateTime()" class="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none text-sm bg-white">
+                                <option value="1 Jam">1 Jam</option>
+                                <option value="2 Jam" selected>2 Jam</option>
+                                <option value="3 Jam">3 Jam</option>
+                                <option value="4 Jam">4 Jam</option>
+                                <option value="Seharian">Seharian</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Jam Keluar (WITA)</label>
+                                <input type="text" id="form-jam-keluar" readonly class="w-full px-3.5 py-2 border border-gray-200 bg-gray-50 rounded-xl font-bold text-blue-900 cursor-not-allowed text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Estimasi Kembali</label>
+                                <input type="text" id="form-jam-kembali" readonly class="w-full px-3.5 py-2 border border-gray-200 bg-gray-50 rounded-xl font-bold text-emerald-700 cursor-not-allowed text-sm">
+                            </div>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Keperluan / Alasan</label>
+                            <textarea id="form-keperluan" rows="2" class="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none text-sm" placeholder="Jelaskan alasan keperluan dinas atau pribadi..." required></textarea>
+                        </div>
+                        <div class="md:col-span-2 flex justify-end">
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-md transition duration-200 text-sm flex items-center">
+                                Kirim Permohonan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- RIWAYAT STAF -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-base font-bold text-gray-800 mb-4 flex items-center">
+                        Riwayat Permohonan Izin Saya
+                    </h3>
+                    <div class="overflow-x-auto rounded-xl border border-gray-200">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Tanggal</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Tujuan</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Durasi</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Status</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staff-history-body" class="bg-white divide-y divide-gray-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KEPSEK / ADMIN DASHBOARD -->
+            <div id="kepsek-dashboard" class="hidden space-y-6">
+                <!-- STATS CARDS -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Pengajuan</p>
+                        <h3 id="stat-total" class="text-2xl font-black text-gray-800 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-emerald-100 bg-emerald-50/20">
+                        <p class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Disetujui</p>
+                        <h3 id="stat-approved" class="text-2xl font-black text-emerald-600 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 bg-amber-50/20">
+                        <p class="text-xs font-bold text-amber-600 uppercase tracking-wider">Menunggu</p>
+                        <h3 id="stat-pending" class="text-2xl font-black text-amber-600 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-rose-100 bg-rose-50/20">
+                        <p class="text-xs font-bold text-rose-600 uppercase tracking-wider">Ditolak</p>
+                        <h3 id="stat-rejected" class="text-2xl font-black text-rose-600 mt-1">0</h3>
+                    </div>
+                </div>
+
+                <!-- CHARTS ROW -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2">
+                        <h3 class="text-sm font-bold text-gray-800 mb-4">Tren Pengajuan Harian</h3>
+                        <div class="h-60 relative w-full">
+                            <canvas id="chart-trend"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-bold text-gray-800 mb-4">Proporsi Status Persetujuan</h3>
+                        <div class="h-60 relative w-full flex justify-center items-center">
+                            <canvas id="chart-status"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABLE REKAPAN -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">Daftar Pengajuan & Rekapan Izin</h2>
+                            <p class="text-xs text-gray-500">Verifikasi, setujui, atau cetak laporan resmi permohonan staf.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button onclick="openRecapPrintPreview()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-xs transition flex items-center shadow-sm">
+                                Cetak Rekapan Laporan
+                            </button>
+                            <button onclick="resetData()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-2 rounded-xl text-xs transition border border-gray-300">
+                                Reset Data
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto border border-gray-200 rounded-xl">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase w-10">No</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Tanggal</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Nama / Unit</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Tujuan & Waktu</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Keperluan</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Status</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Aksi Verifikasi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rekapan-body" class="bg-white divide-y divide-gray-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <footer class="bg-white border-t border-gray-200 py-4 text-center text-xs text-gray-500 mt-auto">
+            &copy; 2026 SDN No. 40 Hulonthalangi Gorontalo &bull; Dinas Pendidikan dan Kebudayaan Kota Gorontalo. All rights reserved.
+        </footer>
+    </div>
+
+    <!-- PRINT PREVIEW MODAL - SURAT INDIVIDUAL -->
+    <div id="print-area-wrapper" class="hidden fixed inset-0 z-50 bg-gray-900/80 backdrop-blur-sm overflow-y-auto p-4 md:p-10">
+        <div class="max-w-4xl mx-auto mb-4 flex justify-between items-center no-print">
+            <span class="text-white font-semibold text-sm">Pratinjau Cetak Surat Izin Keluar</span>
+            <div class="space-x-2">
+                <button onclick="closePrintPreview()" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow">Tutup</button>
+                <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow flex items-center inline-flex">
+                    Cetak Dokumen
+                </button>
+            </div>
+        </div>
+
+        <div id="print-area" class="bg-white mx-auto p-12 shadow-2xl relative text-black" style="width: 210mm; min-height: 297mm; font-family: 'Times New Roman', Times, serif; line-height: 1.4;">
+            <div class="surat-header">
+                <img id="surat-logo-img-kiri" src="" alt="Logo Kiri" class="logo-kiri">
+                <img id="surat-logo-img-kanan" src="" alt="Logo Kanan" class="logo-kanan">
+                <h2 style="font-size: 16pt; font-weight: bold; margin: 0; text-transform: uppercase;">PEMERINTAH KOTA GORONTALO</h2>
+                <h1 style="font-size: 15pt; font-weight: bold; margin: 0; text-transform: uppercase;">DINAS PENDIDIKAN DAN KEBUDAYAAN</h1>
+                <h3 style="font-size: 14pt; font-weight: bold; margin: 0; text-transform: uppercase;">SDN NO. 40 HULONTHALANGI GORONTALO</h3>
+                <p style="font-size: 9pt; margin: 4px 0 0 0;">Jl. Satsuit Tubun Kel. Tenda Kec. Hulonthalangi Kota Gorontalo 96117</p>
+                <p style="font-size: 9pt; margin: 4px 0 0 0;">Email : sdn40hulonthalangi@gmail.com</p>
+            </div>
+
+            <div class="surat-title">
+                SURAT IZIN KELUAR SEKOLAH
+            </div>
+            <div style="text-align: center; margin-top: 3px; margin-bottom: 20px; font-size: 11pt;">
+                Nomor : <span id="print-nomor">422/SDN-40/HLTG/2026/...</span>
+            </div>
+
+            <div style="display: flex; margin-bottom: 15px;">
+                <div style="width: 70px; font-weight: bold;">Dasar</div>
+                <div style="width: 15px;">:</div>
+                <div style="flex: 1;">
+                    <ol style="margin: 0; padding-left: 18px; list-style-type: lower-alpha;">
+                        <li>Peraturan Pemerintah No.94 Tahun 2021 tentang Disiplin Pegawai Negeri Sipil.</li>
+                        <li>Surat Edaran Walikota Gorontalo Nomor:800/BKPP/I/460 Tentang Larangan Meinggalkan Tempat Kerja/Kantor/Sekolah Pada Jama Kerja Efektif Bagi Apratur Sipil Negara Di Lingkungan Pemerintah Kota Gorontalo.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div style="text-align: center; font-weight: bold; margin: 15px 0;">
+                MEMBERIKAN IZIN KEPADA:
+            </div>
+
+            <div class="surat-grid">
+                <div>Nama Lengkap</div>
+                <div>:</div>
+                <div id="print-nama" style="font-weight: bold;">-</div>
+            </div>
+            <div class="surat-grid">
+                <div>NIP / NIK</div>
+                <div>:</div>
+                <div id="print-nip">-</div>
+            </div>
+            <div class="surat-grid">
+                <div>Status Pegawai</div>
+                <div>:</div>
+                <div id="print-status-pegawai">-</div>
+            </div>
+            <div class="surat-grid">
+                <div>Jabatan</div>
+                <div>:</div>
+                <div id="print-jabatan">-</div>
+            </div>
+            <div class="surat-grid">
+                <div>Unit Kerja</div>
+                <div>:</div>
+                <div id="print-unit">-</div>
+            </div>
+            <div class="surat-grid">
+                <div>Tujuan Keluar</div>
+                <div>:</div>
+                <div id="print-tujuan" style="font-weight: bold;">-</div>
+            </div>
+
+            <div class="surat-box">
+                <div style="font-size: 11pt; margin-bottom: 6px;"><b>Maksud Keperluan:</b> <span id="print-keperluan">-</span></div>
+                <div style="font-size: 11pt; margin-bottom: 4px;"><b>Durasi Izin:</b> <span id="print-waktu">-</span></div>
+                <div style="font-size: 10.5pt; color: #111; font-weight: bold;">
+                    (Pukul <span id="print-jam-keluar">00:00</span> WITA s.d. Estimasi Kembali Pukul <span id="print-jam-kembali">00:00</span> WITA)
+                </div>
+            </div>
+
+            <div style="font-size: 10pt; margin-top: 15px; text-align: justify;">
+                Demikian surat izin ini diberikan untuk dipergunakan sebagaimana mestinya dan setelah selesai melaksanakan urusan tersebut agar segera kembali melaksanakan tugas.
+            </div>
+
+            <div class="surat-ttd">
+                <div>Gorontalo, <span id="print-tanggal">-</span></div>
+                <div>Kepala Sekolah,</div>
+                <!-- TANDA TANGAN BARCODE / QR CODE -->
+                <div id="qrcode-container" style="display: flex; justify-content: center; margin: 10px 0; min-height: 70px;"></div>
+                <div style="font-weight: bold; text-decoration: underline;">
+                    RANTO MUSA, S.Pd.
+                </div>
+                <div>NIP.198504102009011002</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRINT PREVIEW MODAL - REKAPAN SUMMARY SHEET -->
+    <div id="print-recap-wrapper" class="hidden fixed inset-0 z-50 bg-gray-900/80 backdrop-blur-sm overflow-y-auto p-4 md:p-10">
+        <div class="max-w-5xl mx-auto mb-4 flex justify-between items-center no-print">
+            <span class="text-white font-semibold text-sm">Pratinjau Cetak Rekapan</span>
+            <div class="space-x-2">
+                <button onclick="closeRecapPrintPreview()" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow">Tutup</button>
+                <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow flex items-center inline-flex">
+                    Cetak Rekapan
+                </button>
+            </div>
+        </div>
+        
+        <div id="print-recap-area" class="bg-white mx-auto p-10 shadow-2xl relative text-black" style="width: 297mm; min-height: 210mm; font-family: 'Times New Roman', Times, serif;">
+            <h2 style="text-align: center; font-size: 14pt; font-weight: bold; margin-bottom: 5px;">REKAPAN IZIN KELUAR KANTOR / TUGAS LUAR</h2>
+            <h3 style="text-align: center; font-size: 12pt; font-weight: bold; margin-bottom: 20px;">SDN NO. 40 HULONTHALANGI KOTA GORONTALO</h3>
+            
+            <table style="width: 100%; border-collapse: collapse; font-size: 10pt;" border="1">
+                <thead>
+                    <tr style="background-color: #f0f0f0;">
+                        <th style="padding: 8px;">No</th>
+                        <th style="padding: 8px;">Tanggal</th>
+                        <th style="padding: 8px;">Nama / NIP</th>
+                        <th style="padding: 8px;">Status / Unit Kerja</th>
+                        <th style="padding: 8px;">Tujuan & Durasi</th>
+                        <th style="padding: 8px;">Keperluan</th>
+                        <th style="padding: 8px;">Status Izin</th>
+                    </tr>
+                </thead>
+                <tbody id="print-recap-body">
+                    <!-- Populated dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // === KONFIGURASI LOGO ===
+        const GAMBAR_LOGO_KIRI = LOGO_KIRI_URL;
+        const GAMBAR_LOGO_KANAN = LOGO_KANAN_URL;
+
+        document.getElementById('login-logo-img').src = GAMBAR_LOGO_KIRI;
+        document.getElementById('nav-logo-img').src = GAMBAR_LOGO_KIRI;
+        document.getElementById('surat-logo-img-kiri').src = GAMBAR_LOGO_KIRI;
+        document.getElementById('surat-logo-img-kanan').src = GAMBAR_LOGO_KANAN;
+
+        // === CLOUD DATA & STATE ===
+        window.currentUser = null;
+        window.dataIzin = [];
+        let trendChartInstance = null;
+        let statusChartInstance = null;
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'e-izin-sdn40';
+        let db, auth;
+        let isCloudEnabled = false;
+
+        // Inisialisasi Database Cloud jika lingkungan mendukung
+        if (typeof __firebase_config !== 'undefined') {
+            try {
+                const app = initializeApp(JSON.parse(__firebase_config));
+                db = getFirestore(app);
+                auth = getAuth(app);
+                isCloudEnabled = true;
+
+                const initAuth = async () => {
+                    const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                    if (token) await signInWithCustomToken(auth, token);
+                    else await signInAnonymously(auth);
+                    startRealtimeSync();
+                };
+                initAuth();
+            } catch (e) {
+                console.error("Cloud DB Init failed", e);
+                loadLocalData();
+            }
+        } else {
+            loadLocalData();
+        }
+
+        function loadLocalData() {
+            window.dataIzin = JSON.parse(localStorage.getItem('dataIzinKeluar')) || [];
+        }
+
+        function startRealtimeSync() {
+            if (!auth || !auth.currentUser) return;
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'surat_izin');
+            onSnapshot(query(colRef), (snapshot) => {
+                window.dataIzin = [];
+                snapshot.forEach(doc => window.dataIzin.push({ fb_id: doc.id, ...doc.data() }));
+                window.dataIzin.sort((a, b) => b.timestamp - a.timestamp);
+                refreshUI();
+            }, (error) => console.error("Data fetch error:", error));
+        }
+
+        function refreshUI() {
+            if (!window.currentUser) return;
+            if (window.currentUser.role === 'kepsek') window.renderKepsekDashboard();
+            else window.renderStaffHistory();
+        }
+
+        // === UTILITY & UI FUNCTIONS ===
+        window.showToast = function(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            msgEl.textContent = message;
+            if (isError) {
+                toast.classList.replace('bg-emerald-600', 'bg-red-600');
+                toast.classList.replace('border-emerald-400', 'border-red-400');
+            } else {
+                toast.classList.replace('bg-red-600', 'bg-emerald-600');
+                toast.classList.replace('border-red-400', 'border-emerald-400');
+            }
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => toast.classList.add('translate-x-full'), 3000);
+        };
+
+        window.handleLogin = function() {
+            const user = document.getElementById('username').value.trim().toLowerCase();
+            const pass = document.getElementById('password').value.trim();
+
+            if (user === 'admin' && pass === 'admin') window.currentUser = { role: 'kepsek', name: 'Kepala Sekolah' };
+            else if (user === 'staf' && pass === 'staf') window.currentUser = { role: 'staf', name: 'Guru / Staf' };
+            else { window.showToast('Username atau password salah!', true); return; }
+
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            document.getElementById('user-greeting').textContent = `Halo, ${window.currentUser.name}`;
+            document.getElementById('user-role-badge').textContent = window.currentUser.role === 'kepsek' ? 'Administrator' : 'Staf Sekolah';
+
+            if (window.currentUser.role === 'kepsek') {
+                document.getElementById('kepsek-dashboard').classList.remove('hidden');
+                document.getElementById('staff-dashboard').classList.add('hidden');
+            } else {
+                document.getElementById('staff-dashboard').classList.remove('hidden');
+                document.getElementById('kepsek-dashboard').classList.add('hidden');
+                window.autoCalculateTime();
+            }
+            refreshUI();
+            window.showToast(`Berhasil masuk sebagai ${window.currentUser.name}`);
+        };
+
+        window.handleLogout = function() {
+            window.currentUser = null;
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        };
+
+        window.getFormattedDate = function(dateObj = new Date()) {
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            return `${days[dateObj.getDay()]}, ${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+        };
+
+        window.autoCalculateTime = function() {
+            const waktuSelect = document.getElementById('form-waktu').value;
+            let addHours = waktuSelect === 'Seharian' ? 8 : parseInt(waktuSelect);
+            const now = new Date();
+            const formatTime = (d) => d.toTimeString().split(' ')[0].substring(0, 5);
+            document.getElementById('form-jam-keluar').value = formatTime(now);
+            const kembali = new Date(now.getTime() + addHours * 3600000);
+            document.getElementById('form-jam-kembali').value = formatTime(kembali);
+        };
+
+        // === DATA OPERATIONS ===
+        window.submitSurat = async function() {
+            const newIzin = {
+                id: 'IZIN-' + Date.now(),
+                timestamp: Date.now(),
+                tanggalStr: window.getFormattedDate(),
+                tanggalRaw: new Date().toISOString().split('T')[0],
+                nama: document.getElementById('form-nama').value,
+                nip: document.getElementById('form-nip').value,
+                statusPegawai: document.getElementById('form-status-pegawai').value,
+                jabatan: document.getElementById('form-jabatan').value,
+                unit: document.getElementById('form-unit').value,
+                tujuan: document.getElementById('form-tujuan').value,
+                waktu: document.getElementById('form-waktu').value,
+                jamKeluar: document.getElementById('form-jam-keluar').value,
+                jamKembali: document.getElementById('form-jam-kembali').value,
+                keperluan: document.getElementById('form-keperluan').value,
+                status: 'Menunggu'
+            };
+
+            if (isCloudEnabled && auth && auth.currentUser) {
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'surat_izin'), newIzin);
+                } catch(e) { window.showToast("Gagal menyimpan data ke internet", true); }
+            } else {
+                window.dataIzin.unshift(newIzin);
+                localStorage.setItem('dataIzinKeluar', JSON.stringify(window.dataIzin));
+                refreshUI();
+            }
+            
+            window.showToast('Permohonan izin berhasil dikirim.');
+            document.getElementById('form-tujuan').value = '';
+            document.getElementById('form-keperluan').value = '';
+        };
+
+        window.updateStatus = async function(id, newStatus) {
+            if (isCloudEnabled && auth && auth.currentUser) {
+                const item = window.dataIzin.find(i => i.id === id);
+                if (item && item.fb_id) {
+                    try {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'surat_izin', item.fb_id), { status: newStatus });
+                        window.showToast(`Status diubah menjadi: ${newStatus}`);
+                    } catch(e) { window.showToast("Gagal ubah status", true); }
+                }
+            } else {
+                const index = window.dataIzin.findIndex(i => i.id === id);
+                if (index > -1) {
+                    window.dataIzin[index].status = newStatus;
+                    localStorage.setItem('dataIzinKeluar', JSON.stringify(window.dataIzin));
+                    refreshUI();
+                    window.showToast(`Status diubah menjadi: ${newStatus}`);
+                }
+            }
+        };
+
+        window.resetData = async function() {
+            if (window.dataIzin.length === 0) { window.showToast("Data sudah kosong."); return; }
+            
+            if (isCloudEnabled && auth && auth.currentUser) {
+                try {
+                    for (const item of window.dataIzin) {
+                        if(item.fb_id) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'surat_izin', item.fb_id));
+                    }
+                    window.showToast('Semua data rekapan telah direset!', true);
+                } catch(e) { window.showToast("Gagal reset data", true); }
+            } else {
+                window.dataIzin = [];
+                localStorage.setItem('dataIzinKeluar', JSON.stringify(window.dataIzin));
+                refreshUI();
+                window.showToast('Semua data rekapan telah direset!', true);
+            }
+        };
+
+        // === RENDER FUNCTIONS ===
+        window.renderStaffHistory = function() {
+            const tbody = document.getElementById('staff-history-body');
+            tbody.innerHTML = '';
+            if (window.dataIzin.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Belum ada riwayat permohonan.</td></tr>`;
+                return;
+            }
+            window.dataIzin.forEach(izin => {
+                let statusBadge = '';
+                if (izin.status === 'Disetujui') statusBadge = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Disetujui</span>';
+                else if (izin.status === 'Ditolak') statusBadge = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Ditolak</span>';
+                else statusBadge = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Menunggu</span>';
+
+                let printBtn = izin.status === 'Disetujui' 
+                    ? `<button onclick="window.openPrintPreview('${izin.id}')" class="text-blue-600 hover:text-blue-900 font-medium text-xs underline">Cetak Surat</button>`
+                    : `<span class="text-gray-400 text-xs">Belum bisa dicetak</span>`;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-700">${izin.tanggalStr}</td>
+                    <td class="px-4 py-3 text-gray-700"><b>${izin.tujuan}</b><br><span class="text-xs text-gray-500">${izin.keperluan}</span></td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-700">${izin.waktu}<br><span class="text-xs">${izin.jamKeluar} - ${izin.jamKembali}</span></td>
+                    <td class="px-4 py-3 whitespace-nowrap text-center">${statusBadge}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-center">${printBtn}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.renderKepsekDashboard = function() {
+            const total = window.dataIzin.length;
+            const approved = window.dataIzin.filter(i => i.status === 'Disetujui').length;
+            const pending = window.dataIzin.filter(i => i.status === 'Menunggu').length;
+            const rejected = window.dataIzin.filter(i => i.status === 'Ditolak').length;
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-approved').textContent = approved;
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-rejected').textContent = rejected;
+
+            const tbody = document.getElementById('rekapan-body');
+            tbody.innerHTML = '';
+            
+            if (total === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">Belum ada data permohonan yang masuk.</td></tr>`;
+            } else {
+                window.dataIzin.forEach((izin, index) => {
+                    let statusBadge = '';
+                    if (izin.status === 'Disetujui') statusBadge = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Disetujui</span>';
+                    else if (izin.status === 'Ditolak') statusBadge = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Ditolak</span>';
+                    else statusBadge = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Menunggu</span>';
+
+                    let actions = '';
+                    if (izin.status === 'Menunggu') {
+                        actions = `
+                            <div class="flex flex-col gap-1 sm:flex-row justify-center">
+                                <button onclick="window.updateStatus('${izin.id}', 'Disetujui')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1 rounded text-xs">Setujui</button>
+                                <button onclick="window.updateStatus('${izin.id}', 'Ditolak')" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">Tolak</button>
+                            </div>
+                        `;
+                    } else {
+                        actions = `
+                            <div class="flex flex-col gap-1 sm:flex-row justify-center">
+                                <button onclick="window.openPrintPreview('${izin.id}')" class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded text-xs">Lihat Surat</button>
+                                <button onclick="window.updateStatus('${izin.id}', 'Menunggu')" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs border">Batal</button>
+                            </div>
+                        `;
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-3 py-3 text-center text-gray-500">${index + 1}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-700 text-xs">${izin.tanggalStr}</td>
+                        <td class="px-4 py-3 text-gray-700"><b>${izin.nama}</b><br><span class="text-xs text-gray-500">${izin.jabatan}</span></td>
+                        <td class="px-4 py-3 text-gray-700"><span class="font-medium">${izin.tujuan}</span><br><span class="text-xs text-gray-500">${izin.waktu} (${izin.jamKeluar}-${izin.jamKembali})</span></td>
+                        <td class="px-4 py-3 text-gray-700 text-xs">${izin.keperluan}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">${statusBadge}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">${actions}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            window.renderCharts(approved, pending, rejected);
+        };
+
+        window.renderCharts = function(approved, pending, rejected) {
+            if(trendChartInstance) trendChartInstance.destroy();
+            if(statusChartInstance) statusChartInstance.destroy();
+
+            const dateCounts = {};
+            window.dataIzin.forEach(item => {
+                dateCounts[item.tanggalRaw] = (dateCounts[item.tanggalRaw] || 0) + 1;
+            });
+            const sortedDates = Object.keys(dateCounts).sort();
+            const counts = sortedDates.map(date => dateCounts[date]);
+
+            const ctxTrend = document.getElementById('chart-trend').getContext('2d');
+            trendChartInstance = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: sortedDates.length ? sortedDates : ['Belum ada data'],
+                    datasets: [{ label: 'Jumlah Pengajuan', data: counts.length ? counts : [0], borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', borderWidth: 2, fill: true, tension: 0.3 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
+
+            const ctxStatus = document.getElementById('chart-status').getContext('2d');
+            statusChartInstance = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Disetujui', 'Menunggu', 'Ditolak'],
+                    datasets: [{ data: [approved, pending, rejected], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom' } } }
+            });
+        };
+
+        // === PRINT PREVIEWS ===
+        window.openPrintPreview = function(id) {
+            const izin = window.dataIzin.find(i => i.id === id);
+            if (!izin) return;
+            document.getElementById('print-nomor').textContent = `422/SDN-40/HLTG/2026/${Math.floor(Math.random()*1000).toString().padStart(3, '0')}`;
+            document.getElementById('print-nama').textContent = izin.nama;
+            document.getElementById('print-nip').textContent = izin.nip;
+            document.getElementById('print-status-pegawai').textContent = izin.statusPegawai;
+            document.getElementById('print-jabatan').textContent = izin.jabatan;
+            document.getElementById('print-unit').textContent = izin.unit;
+            document.getElementById('print-tujuan').textContent = izin.tujuan;
+            document.getElementById('print-keperluan').textContent = izin.keperluan;
+            document.getElementById('print-waktu').textContent = izin.waktu;
+            document.getElementById('print-jam-keluar').textContent = izin.jamKeluar;
+            document.getElementById('print-jam-kembali').textContent = izin.jamKembali;
+            document.getElementById('print-tanggal').textContent = izin.tanggalStr.split(', ')[1];
+
+            const qrContainer = document.getElementById('qrcode-container');
+            qrContainer.innerHTML = ''; 
+            new QRCode(qrContainer, {
+                text: `Telah Diverifikasi & Disetujui secara elektronik.\nOleh: Kepala SDN 40 Hulonthalangi\nID Surat: ${izin.id}\nStatus: ${izin.status}`,
+                width: 70, height: 70, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.M
+            });
+            document.getElementById('print-area-wrapper').classList.remove('hidden');
+        };
+
+        window.closePrintPreview = function() { document.getElementById('print-area-wrapper').classList.add('hidden'); };
+
+        window.openRecapPrintPreview = function() {
+            const tbody = document.getElementById('print-recap-body');
+            tbody.innerHTML = '';
+            if (window.dataIzin.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="padding: 15px; text-align: center;">Tidak ada data untuk direkap.</td></tr>`;
+            } else {
+                window.dataIzin.forEach((izin, index) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding: 8px; text-align: center;">${index + 1}</td>
+                        <td style="padding: 8px;">${izin.tanggalStr.split(', ')[1]}</td>
+                        <td style="padding: 8px;"><b>${izin.nama}</b><br><small>NIP: ${izin.nip}</small></td>
+                        <td style="padding: 8px;">${izin.statusPegawai}<br><small>${izin.unit}</small></td>
+                        <td style="padding: 8px;">${izin.tujuan}<br><small>${izin.waktu} (${izin.jamKeluar}-${izin.jamKembali})</small></td>
+                        <td style="padding: 8px; max-width: 200px;">${izin.keperluan}</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold;">${izin.status}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            document.getElementById('print-recap-wrapper').classList.remove('hidden');
+        };
+
+        window.closeRecapPrintPreview = function() { document.getElementById('print-recap-wrapper').classList.add('hidden'); };
+    </script>
+</body>
+</html>
